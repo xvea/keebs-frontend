@@ -1,0 +1,177 @@
+@import 'tailwindcss';
+
+/* Class-based dark mode: `.dark` on <html> switches every token below. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ------------------------------------------------------------------
+   Semantic colour tokens
+   Light: warm parchment and stone. Dark: softened graphite.
+   One accent — a terracotta "escape key" — punctuates both themes.
+   ------------------------------------------------------------------ */
+:root {
+  --background: #f4f1ea;
+  --foreground: #1f1d1a;
+
+  --surface: #ebe6dc;
+  --surface-raised: #faf8f3;
+  --surface-hover: #e3ddd1;
+
+  --muted: #e7e2d8;
+  --muted-foreground: #696358;
+
+  --border: #dbd4c6;
+  --input: #c9c1b1;
+
+  --primary: #24221e;
+  --primary-foreground: #f4f1ea;
+
+  --accent: #b0502a;
+  --accent-foreground: #fbf7f0;
+  --ring: #b0502a;
+
+  --destructive: #a3342b;
+  --overlay: rgb(31 29 26 / 0.42);
+
+  /* Keyboard sketch */
+  --key: #f8f5ef;
+  --key-stroke: #b7ae9e;
+  --key-case: #e2dccf;
+
+  color-scheme: light;
+}
+
+.dark {
+  --background: #1b1a18;
+  --foreground: #ebe6dc;
+
+  --surface: #232220;
+  --surface-raised: #292826;
+  --surface-hover: #2c2b28;
+
+  --muted: #2a2926;
+  --muted-foreground: #a29c91;
+
+  --border: #35332f;
+  --input: #484540;
+
+  --primary: #ebe6dc;
+  --primary-foreground: #1b1a18;
+
+  --accent: #df8a5f;
+  --accent-foreground: #1b1a18;
+  --ring: #df8a5f;
+
+  --destructive: #ec8d82;
+  --overlay: rgb(12 11 10 / 0.62);
+
+  --key: #2e2c29;
+  --key-stroke: #5a564e;
+  --key-case: #262522;
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-hover: var(--surface-hover);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-overlay: var(--overlay);
+
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  body {
+    font-family:
+      'Plus Jakarta Sans',
+      -apple-system,
+      BlinkMacSystemFont,
+      sans-serif;
+    background-color: var(--background);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
+  }
+
+  .font-mono-tech {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* Native select menus stay legible in both themes */
+  select option {
+    background-color: var(--surface-raised);
+    color: var(--foreground);
+  }
+}
+
+/* Add-build dialog (native <dialog>) */
+.build-dialog::backdrop {
+  background-color: var(--overlay);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .build-dialog[open]::backdrop {
+    animation: keebs-backdrop-in 0.25s ease-out;
+  }
+}
+
+@keyframes keebs-backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Lock page scroll while a modal dialog is open */
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
