@@ -3,7 +3,7 @@ import LayoutSketch from './LayoutSketch'
 import { AnimatePresence, motion } from 'motion/react'
 
 // `onOpenForm` is an additive, presentation-only prop used by the empty state's "Add build" action.
-export default function BuildList({ builds, onOpenForm }) {
+export default function BuildList({ builds, onOpenForm, onEditBuild, onDeleteBuild }) {
   const heading = (
     <div className="mb-2 flex items-baseline justify-between gap-4">
       <h2 id="collection-title" className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
@@ -84,6 +84,8 @@ export default function BuildList({ builds, onOpenForm }) {
               keycapSet={build.keycapSet}
               soundProfile={build.soundProfile}
               estimatedCost={build.estimatedCost}
+              onEdit={onEditBuild ? () => onEditBuild(build) : undefined}
+              onDelete={onDeleteBuild ? () => onDeleteBuild(build.id) : undefined}
             />
           ))}
         </AnimatePresence>

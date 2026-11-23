@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const INITIAL_FORM_STATE = {
   buildName: '',
@@ -13,9 +13,29 @@ const INITIAL_FORM_STATE = {
   estimatedCost: '',
 }
 
-export default function BuildForm({ onAddBuild }) {
+export default function BuildForm({ onAddBuild, initialData = null }) {
   const [formData, setFormData] = useState(INITIAL_FORM_STATE)
   const [errorMessage, setErrorMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        buildName: initialData.buildName ?? '',
+        baseKit: initialData.baseKit ?? '',
+        layoutSize: initialData.layoutSize ?? '65%',
+        mountingStyle: initialData.mountingStyle ?? 'Gasket Mount',
+        switchModel: initialData.switchModel ?? '',
+        switchType: initialData.switchType ?? 'Linear',
+        keycapSet: initialData.keycapSet ?? '',
+        soundProfile: initialData.soundProfile ?? 'Thocky',
+        estimatedCost: initialData.estimatedCost ?? '',
+      })
+    } else {
+      setFormData(INITIAL_FORM_STATE)
+    }
+    setErrorMessage('')
+  }, [initialData])
 
   const handleInputChange = (event) => {
     const { name, value } = event.target
@@ -26,7 +46,7 @@ export default function BuildForm({ onAddBuild }) {
     if (errorMessage) setErrorMessage('')
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
 
     if (
@@ -41,7 +61,6 @@ export default function BuildForm({ onAddBuild }) {
     }
 
     const newBuildItem = {
-      id: `kb-${Date.now()}`,
       buildName: formData.buildName.trim(),
       baseKit: formData.baseKit.trim(),
       layoutSize: formData.layoutSize,
@@ -53,8 +72,15 @@ export default function BuildForm({ onAddBuild }) {
       estimatedCost: Number(formData.estimatedCost),
     }
 
-    onAddBuild(newBuildItem)
-    setFormData(INITIAL_FORM_STATE)
+    try {
+      setIsSubmitting(true)
+      await onAddBuild(newBuildItem)
+      setFormData(INITIAL_FORM_STATE)
+    } catch (error) {
+      setErrorMessage(error.message || 'Failed to save keyboard build.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const inputBaseClass =

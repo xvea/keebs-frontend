@@ -12,6 +12,8 @@ export default function BuildCard({
   keycapSet,
   soundProfile,
   estimatedCost,
+  onEdit,
+  onDelete,
 }) {
   const formattedPrice = new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -76,6 +78,29 @@ export default function BuildCard({
             </div>
           ))}
         </dl>
+
+        {(onEdit || onDelete) && (
+          <div className="mt-6 flex items-center gap-3">
+            {onEdit && (
+              <button
+                type="button"
+                onClick={onEdit}
+                className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-surface-hover"
+              >
+                Edit
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                onClick={onDelete}
+                className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-400"
+              >
+                Delete
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </motion.article>
   )

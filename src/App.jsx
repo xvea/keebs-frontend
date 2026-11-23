@@ -6,62 +6,14 @@ import Header from './components/Header'
 import { motion, MotionConfig } from 'motion/react'
 import { useEffect, useState } from 'react'
 
-const INITIAL_KEYBOARD_BUILDS = [
-  {
-    id: 'kb-101',
-    buildName: 'Envoy Obscura Edition',
-    baseKit: 'Mode Envoy (Mirage Aluminum / Copper Weight)',
-    layoutSize: '65%',
-    mountingStyle: 'Lattice Block',
-    switchModel: 'Gateron Oil King (Krytox 205g0)',
-    switchType: 'Linear',
-    keycapSet: 'GMK White-on-Black (WoB) ABS',
-    soundProfile: 'Creamy',
-    estimatedCost: 4650000,
-  },
-  {
-    id: 'kb-102',
-    buildName: 'Neo Studio Monolith',
-    baseKit: 'Qwertykeys Neo65 (Anodized Silver / Brass)',
-    layoutSize: '65%',
-    mountingStyle: 'Gasket Mount',
-    switchModel: 'Gazzew Boba U4T 62g',
-    switchType: 'Tactile',
-    keycapSet: 'PBTfans Resonance Double-Shot',
-    soundProfile: 'Thocky',
-    estimatedCost: 2850000,
-  },
-  {
-    id: 'kb-103',
-    buildName: 'Acoustica 75 Daily',
-    baseKit: 'Monsgeek M1W V3 (Black CNC Aluminum)',
-    layoutSize: '75%',
-    mountingStyle: 'Gasket Mount',
-    switchModel: 'Vertex V1 Linear (Factory Lubed)',
-    switchType: 'Linear',
-    keycapSet: 'Osume Dusk Cherry Profile PBT',
-    soundProfile: 'Thocky',
-    estimatedCost: 2150000,
-  },
-  {
-    id: 'kb-104',
-    buildName: 'Typist Tactile Archive',
-    baseKit: 'Luminkey80 TKL (E-Coated Warm White)',
-    layoutSize: 'TKL',
-    mountingStyle: 'Top Mount',
-    switchModel: 'Kailh Box Jade Clickbar',
-    switchType: 'Clicky',
-    keycapSet: 'CRP Tulip R4 Dye-Sub PBT',
-    soundProfile: 'Clacky',
-    estimatedCost: 3900000,
-  },
-]
+const API_URL = 'http://localhost:3001/builds'
 
 const getInitialTheme = () =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 
 export default function App() {
-  const [builds, setBuilds] = useState(INITIAL_KEYBOARD_BUILDS)
+  const [builds, setBuilds] = useState([])
+  const [editingBuild, setEditingBuild] = useState(null)
 
   // Presentation-only UI state — kept separate from the build data above.
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -71,25 +23,97 @@ export default function App() {
     document.documentElement.classList.toggle('dark', theme === 'dark')
   }, [theme])
 
-  const handleAddBuild = (newBuild) => {
-    setBuilds((prevBuilds) => [newBuild, ...prevBuilds])
+  const fetchBuilds = async () => {
+    try {
+      const response = await fetch(API_URL)
+      if (!response.ok) throw new Error('Failed to fetch builds')
+      const data = await response.json()
+      setBuilds(data)
+    } catch (error) {
+      console.error('Error fetching builds:', error)
+    }
   }
 
-  const handleClearAll = () => {
+  useEffect(() => {
+    fetchBuilds()
+  }, [])
+
+  const handleAddBuild = async (newBuild) => {
+    const { id: _id, ...payload } = newBuild
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      const message = Array.isArray(err.message) ? err.message.join(', ') : err.message
+      throw new Error(message || 'Failed to create build')
+    }
+
+    const created = await response.json()
+    setBuilds((prevBuilds) => [created, ...prevBuilds])
+  }
+
+  const handleUpdateBuild = async (id, updatedData) => {
+    const { id: _id, ...payload } = updatedData
+    const response = await fetch(`${API_URL}/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      const message = Array.isArray(err.message) ? err.message.join(', ') : err.message
+      throw new Error(message || 'Failed to update build')
+    }
+
+    const updated = await response.json()
+    setBuilds((prevBuilds) => prevBuilds.map((b) => (b.id === id ? updated : b)))
+  }
+
+  const handleDeleteBuild = async (id) => {
+    try {
+      const response = await fetch(`${API_URL}/${id}`, { method: 'DELETE' })
+      if (!response.ok) throw new Error('Failed to delete build')
+      setBuilds((prevBuilds) => prevBuilds.filter((b) => b.id !== id))
+    } catch (error) {
+      console.error('Error deleting build:', error)
+    }
+  }
+
+  const handleClearAll = async () => {
+    await Promise.all(builds.map((b) => fetch(`${API_URL}/${b.id}`, { method: 'DELETE' })))
     setBuilds([])
   }
 
   const handleRestoreDefaults = () => {
-    setBuilds(INITIAL_KEYBOARD_BUILDS)
+    fetchBuilds()
   }
 
-  const openForm = () => setIsFormOpen(true)
-  const closeForm = () => setIsFormOpen(false)
+  const openForm = () => {
+    setEditingBuild(null)
+    setIsFormOpen(true)
+  }
+  const openEditForm = (build) => {
+    setEditingBuild(build)
+    setIsFormOpen(true)
+  }
+  const closeForm = () => {
+    setIsFormOpen(false)
+    setEditingBuild(null)
+  }
   const toggleTheme = () => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))
 
   // BuildForm only calls onAddBuild after validation passes, so the dialog closes on success only.
-  const handleAddBuildFromDialog = (newBuild) => {
-    handleAddBuild(newBuild)
+  const handleSubmitFromDialog = async (buildData) => {
+    if (editingBuild) {
+      await handleUpdateBuild(editingBuild.id, buildData)
+    } else {
+      await handleAddBuild(buildData)
+    }
     closeForm()
   }
 
@@ -132,7 +156,12 @@ export default function App() {
           </div>
 
           {/* 4 & 5. List & Card Components */}
-          <BuildList builds={builds} onOpenForm={openForm} />
+          <BuildList
+            builds={builds}
+            onOpenForm={openForm}
+            onEditBuild={openEditForm}
+            onDeleteBuild={handleDeleteBuild}
+          />
         </main>
 
         <footer className="mt-24 border-t border-border">
@@ -146,7 +175,7 @@ export default function App() {
 
         {/* 3. Controlled Form Component, presented in an accessible dialog */}
         <BuildDialog open={isFormOpen} onClose={closeForm} labelledBy="build-form-title">
-          <BuildForm onAddBuild={handleAddBuildFromDialog} />
+          <BuildForm onAddBuild={handleSubmitFromDialog} initialData={editingBuild} />
         </BuildDialog>
       </div>
     </MotionConfig>
